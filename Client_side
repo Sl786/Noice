@@ -1,0 +1,47 @@
+#include <stdio.h>
+#include <string.h> // For strerror
+#include <errno.h> // For errno
+#include <unistd.h> // For close
+#include <netinet/in.h> // For sockaddr_in
+#include <sys/socket.h> // For socket functions
+#include <netdb.h> // For gethostbyname
+
+#define DATA_BUFFER "Mona Lisa was painted by Leonardo da Vinci"
+
+int main() {
+    struct sockaddr_in saddr;
+    int fd, ret_val;
+    struct hostent *host; /* Need netdb.h for this */
+
+    /* Step 1: Open a UDP socket */
+    fd = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    if (fd == -1) {
+        fprintf(stderr, "socket failed [%s]\n", strerror(errno));
+        return -1;
+    }
+    printf("Created a socket with fd: %d\n", fd);
+
+    /* Next, initialize the server address */
+    memset(&saddr, 0, sizeof(saddr)); // Initialize the structure to zero
+    saddr.sin_family = AF_INET;
+    saddr.sin_port = htons(7000);
+    host = gethostbyname("127.0.0.1");
+    if (host == NULL) {
+        fprintf(stderr, "gethostbyname failed [%s]\n", hstrerror(h_errno));
+        close(fd);
+        return -1;
+    }
+    saddr.sin_addr = *((struct in_addr *)host->h_addr);
+
+    /* Step 2: Send some data */
+    ret_val = sendto(fd, DATA_BUFFER, strlen(DATA_BUFFER) + 1, 0, (struct sockaddr *)&saddr, sizeof(struct sockaddr_in));
+    if (ret_val != -1) {
+        printf("Successfully sent data (len %d bytes): %s\n", ret_val, DATA_BUFFER);
+    } else {
+        printf("sendto() failed [%s]\n", strerror(errno));
+    }
+
+    /* Last step: Close the socket */
+    close(fd);
+    return 0;
+}
